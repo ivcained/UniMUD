@@ -2,132 +2,116 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class PositionTable : MUDTable
-    {
-        public class PositionTableUpdate : RecordUpdate
-        {
-            public int? X;
-            public int? PreviousX;
-            public int? Y;
-            public int? PreviousY;
-        }
 
-        public readonly static string ID = "Position";
-        public static RxTable Table
-        {
-            get { return NetworkManager.Instance.ds.store[ID]; }
-        }
+	public class PositionTable : MUDTable
+	{
 
-        public override string GetTableId()
-        {
-            return ID;
-        }
+		public class PositionTableUpdate : RecordUpdate {
+							public int? X;
+				public int? PreviousX;
+							public int? Y;
+				public int? PreviousY;
+					}
 
-        public int? X;
-        public int? Y;
+		public readonly static string ID = "Position";
+		public static RxTable Table {get{return NetworkManager.Instance.ds.store[ID]; } }
+		public override string GetTableId() {return ID;}
 
-        public override Type TableType()
-        {
-            return typeof(PositionTable);
-        }
+					public int? X;
+					public int? Y;
+		
+		public override Type TableType() {return typeof(PositionTable);}
+		public override Type TableUpdateType() {return typeof(PositionTableUpdate);}
+		
+		public override bool Equals (object? obj) {
+			PositionTable other = (PositionTable)obj;
 
-        public override Type TableUpdateType()
-        {
-            return typeof(PositionTableUpdate);
-        }
+			if(other == null) {return false;}
+							if(X != other.X) {return false;}
+							if(Y != other.Y) {return false;}
+						return true;
+		}
+		public override void SetValues(params object[] functionParameters){
 
-        public override bool Equals(object? obj)
-        {
-            PositionTable other = (PositionTable)obj;
+										 
+				X = (int)functionParameters[0];
+				 
+											 
+				Y = (int)functionParameters[1];
+				 
+									}
 
-            if (other == null)
-            {
-                return false;
-            }
-            if (X != other.X)
-            {
-                return false;
-            }
-            if (Y != other.Y)
-            {
-                return false;
-            }
-            return true;
-        }
+		public static IObservable<RecordUpdate> GetPositionTableUpdates() {
 
-        public override void SetValues(params object[] functionParameters)
-        {
-            X = (int)functionParameters[0];
+			PositionTable mudTable = new PositionTable();
 
-            Y = (int)functionParameters[1];
-        }
+			return NetworkManager.Instance.sync.onUpdate
+			.Where(update => update.Table.Name == ID)
+			.Select(
+				recordUpdate => {
+					return mudTable.RecordUpdateToTyped(recordUpdate);
+				});
+		}
 
-        public static IObservable<RecordUpdate> GetPositionTableUpdates()
-        {
-            PositionTable mudTable = new PositionTable();
+		public override void PropertyToTable(Property property) {
+												X = (int)property["x"];
+																Y = (int)property["y"];
+							
 
-            return NetworkManager.Instance.sync.onUpdate
-                .Where(update => update.Table.Name == ID)
-                .Select(recordUpdate =>
-                {
-                    return mudTable.RecordUpdateToTyped(recordUpdate);
-                });
-        }
+		}
 
-        public override void PropertyToTable(Property property)
-        {
-            X = (int)property["x"];
-            Y = (int)property["y"];
-        }
+		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
 
-        public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
-        {
-            var currentValue = recordUpdate.CurrentRecordValue as Property;
-            var previousValue = recordUpdate.PreviousRecordValue as Property;
-            int? currentXTyped = null;
-            int? previousXTyped = null;
+			var currentValue = recordUpdate.CurrentRecordValue as Property;
+			var previousValue = recordUpdate.PreviousRecordValue as Property;
+			 				  int? currentXTyped = null;
+				  int? previousXTyped = null;
+				
+				  if (currentValue != null && currentValue.ContainsKey("x")) {
+				    				      currentXTyped = (int)currentValue["x"];
+				    				  }
+				
+				  if (previousValue != null && previousValue.ContainsKey("x")) {
+				    				      previousXTyped = (int)previousValue["x"];
+				    	
+				 }
+								  int? currentYTyped = null;
+				  int? previousYTyped = null;
+				
+				  if (currentValue != null && currentValue.ContainsKey("y")) {
+				    				      currentYTyped = (int)currentValue["y"];
+				    				  }
+				
+				  if (previousValue != null && previousValue.ContainsKey("y")) {
+				    				      previousYTyped = (int)previousValue["y"];
+				    	
+				 }
+					
 
-            if (currentValue != null && currentValue.ContainsKey("x"))
-            {
-                currentXTyped = (int)currentValue["x"];
-            }
+			
+			return new PositionTableUpdate
+			{
+				Table = recordUpdate.Table,
+				CurrentRecordValue = recordUpdate.CurrentRecordValue,
+				PreviousRecordValue = recordUpdate.PreviousRecordValue,				
+				CurrentRecordKey = recordUpdate.CurrentRecordKey,
+				PreviousRecordKey = recordUpdate.PreviousRecordKey,
+				Type = recordUpdate.Type,
+				
+									X = currentXTyped,
+					PreviousX = previousXTyped,	
+									Y = currentYTyped,
+					PreviousY = previousYTyped,	
+							};
+		}
 
-            if (previousValue != null && previousValue.ContainsKey("x"))
-            {
-                previousXTyped = (int)previousValue["x"];
-            }
-            int? currentYTyped = null;
-            int? previousYTyped = null;
 
-            if (currentValue != null && currentValue.ContainsKey("y"))
-            {
-                currentYTyped = (int)currentValue["y"];
-            }
-
-            if (previousValue != null && previousValue.ContainsKey("y"))
-            {
-                previousYTyped = (int)previousValue["y"];
-            }
-
-            return new PositionTableUpdate
-            {
-                Table = recordUpdate.Table,
-                CurrentRecordValue = recordUpdate.CurrentRecordValue,
-                PreviousRecordValue = recordUpdate.PreviousRecordValue,
-                CurrentRecordKey = recordUpdate.CurrentRecordKey,
-                PreviousRecordKey = recordUpdate.PreviousRecordKey,
-                Type = recordUpdate.Type,
-                X = currentXTyped,
-                PreviousX = previousXTyped,
-                Y = currentYTyped,
-                PreviousY = previousYTyped,
-            };
-        }
-    }
+	}
 }

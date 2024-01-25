@@ -2,108 +2,95 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class PlayerTable : MUDTable
-    {
-        public class PlayerTableUpdate : RecordUpdate
-        {
-            public bool? Value;
-            public bool? PreviousValue;
-        }
 
-        public readonly static string ID = "Player";
-        public static RxTable Table
-        {
-            get { return NetworkManager.Instance.ds.store[ID]; }
-        }
+	public class PlayerTable : MUDTable
+	{
 
-        public override string GetTableId()
-        {
-            return ID;
-        }
+		public class PlayerTableUpdate : RecordUpdate {
+							public bool? Value;
+				public bool? PreviousValue;
+					}
 
-        public bool? Value;
+		public readonly static string ID = "Player";
+		public static RxTable Table {get{return NetworkManager.Instance.ds.store[ID]; } }
+		public override string GetTableId() {return ID;}
 
-        public override Type TableType()
-        {
-            return typeof(PlayerTable);
-        }
+					public bool? Value;
+		
+		public override Type TableType() {return typeof(PlayerTable);}
+		public override Type TableUpdateType() {return typeof(PlayerTableUpdate);}
+		
+		public override bool Equals (object? obj) {
+			PlayerTable other = (PlayerTable)obj;
 
-        public override Type TableUpdateType()
-        {
-            return typeof(PlayerTableUpdate);
-        }
+			if(other == null) {return false;}
+							if(Value != other.Value) {return false;}
+						return true;
+		}
+		public override void SetValues(params object[] functionParameters){
 
-        public override bool Equals(object? obj)
-        {
-            PlayerTable other = (PlayerTable)obj;
+										 
+				Value = (bool)functionParameters[0];
+				 
+									}
 
-            if (other == null)
-            {
-                return false;
-            }
-            if (Value != other.Value)
-            {
-                return false;
-            }
-            return true;
-        }
+		public static IObservable<RecordUpdate> GetPlayerTableUpdates() {
 
-        public override void SetValues(params object[] functionParameters)
-        {
-            Value = (bool)functionParameters[0];
-        }
+			PlayerTable mudTable = new PlayerTable();
 
-        public static IObservable<RecordUpdate> GetPlayerTableUpdates()
-        {
-            PlayerTable mudTable = new PlayerTable();
+			return NetworkManager.Instance.sync.onUpdate
+			.Where(update => update.Table.Name == ID)
+			.Select(
+				recordUpdate => {
+					return mudTable.RecordUpdateToTyped(recordUpdate);
+				});
+		}
 
-            return NetworkManager.Instance.sync.onUpdate
-                .Where(update => update.Table.Name == ID)
-                .Select(recordUpdate =>
-                {
-                    return mudTable.RecordUpdateToTyped(recordUpdate);
-                });
-        }
+		public override void PropertyToTable(Property property) {
+												Value = (bool)property["value"];
+							
 
-        public override void PropertyToTable(Property property)
-        {
-            Value = (bool)property["value"];
-        }
+		}
 
-        public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
-        {
-            var currentValue = recordUpdate.CurrentRecordValue as Property;
-            var previousValue = recordUpdate.PreviousRecordValue as Property;
-            bool? currentValueTyped = null;
-            bool? previousValueTyped = null;
+		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
 
-            if (currentValue != null && currentValue.ContainsKey("value"))
-            {
-                currentValueTyped = (bool)currentValue["value"];
-            }
+			var currentValue = recordUpdate.CurrentRecordValue as Property;
+			var previousValue = recordUpdate.PreviousRecordValue as Property;
+			 				  bool? currentValueTyped = null;
+				  bool? previousValueTyped = null;
+				
+				  if (currentValue != null && currentValue.ContainsKey("value")) {
+				    				      currentValueTyped = (bool)currentValue["value"];
+				    				  }
+				
+				  if (previousValue != null && previousValue.ContainsKey("value")) {
+				    				      previousValueTyped = (bool)previousValue["value"];
+				    	
+				 }
+					
 
-            if (previousValue != null && previousValue.ContainsKey("value"))
-            {
-                previousValueTyped = (bool)previousValue["value"];
-            }
+			
+			return new PlayerTableUpdate
+			{
+				Table = recordUpdate.Table,
+				CurrentRecordValue = recordUpdate.CurrentRecordValue,
+				PreviousRecordValue = recordUpdate.PreviousRecordValue,				
+				CurrentRecordKey = recordUpdate.CurrentRecordKey,
+				PreviousRecordKey = recordUpdate.PreviousRecordKey,
+				Type = recordUpdate.Type,
+				
+									Value = currentValueTyped,
+					PreviousValue = previousValueTyped,	
+							};
+		}
 
-            return new PlayerTableUpdate
-            {
-                Table = recordUpdate.Table,
-                CurrentRecordValue = recordUpdate.CurrentRecordValue,
-                PreviousRecordValue = recordUpdate.PreviousRecordValue,
-                CurrentRecordKey = recordUpdate.CurrentRecordKey,
-                PreviousRecordKey = recordUpdate.PreviousRecordKey,
-                Type = recordUpdate.Type,
-                Value = currentValueTyped,
-                PreviousValue = previousValueTyped,
-            };
-        }
-    }
+
+	}
 }

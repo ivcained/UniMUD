@@ -2,108 +2,95 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using mud;
 using UniRx;
 using Property = System.Collections.Generic.Dictionary<string, object>;
 
 namespace mudworld
 {
-    public class DamageTable : MUDTable
-    {
-        public class DamageTableUpdate : RecordUpdate
-        {
-            public int? Value;
-            public int? PreviousValue;
-        }
 
-        public readonly static string ID = "Damage";
-        public static RxTable Table
-        {
-            get { return NetworkManager.Instance.ds.store[ID]; }
-        }
+	public class DamageTable : MUDTable
+	{
 
-        public override string GetTableId()
-        {
-            return ID;
-        }
+		public class DamageTableUpdate : RecordUpdate {
+							public int? Value;
+				public int? PreviousValue;
+					}
 
-        public int? Value;
+		public readonly static string ID = "Damage";
+		public static RxTable Table {get{return NetworkManager.Instance.ds.store[ID]; } }
+		public override string GetTableId() {return ID;}
 
-        public override Type TableType()
-        {
-            return typeof(DamageTable);
-        }
+					public int? Value;
+		
+		public override Type TableType() {return typeof(DamageTable);}
+		public override Type TableUpdateType() {return typeof(DamageTableUpdate);}
+		
+		public override bool Equals (object? obj) {
+			DamageTable other = (DamageTable)obj;
 
-        public override Type TableUpdateType()
-        {
-            return typeof(DamageTableUpdate);
-        }
+			if(other == null) {return false;}
+							if(Value != other.Value) {return false;}
+						return true;
+		}
+		public override void SetValues(params object[] functionParameters){
 
-        public override bool Equals(object? obj)
-        {
-            DamageTable other = (DamageTable)obj;
+										 
+				Value = (int)functionParameters[0];
+				 
+									}
 
-            if (other == null)
-            {
-                return false;
-            }
-            if (Value != other.Value)
-            {
-                return false;
-            }
-            return true;
-        }
+		public static IObservable<RecordUpdate> GetDamageTableUpdates() {
 
-        public override void SetValues(params object[] functionParameters)
-        {
-            Value = (int)functionParameters[0];
-        }
+			DamageTable mudTable = new DamageTable();
 
-        public static IObservable<RecordUpdate> GetDamageTableUpdates()
-        {
-            DamageTable mudTable = new DamageTable();
+			return NetworkManager.Instance.sync.onUpdate
+			.Where(update => update.Table.Name == ID)
+			.Select(
+				recordUpdate => {
+					return mudTable.RecordUpdateToTyped(recordUpdate);
+				});
+		}
 
-            return NetworkManager.Instance.sync.onUpdate
-                .Where(update => update.Table.Name == ID)
-                .Select(recordUpdate =>
-                {
-                    return mudTable.RecordUpdateToTyped(recordUpdate);
-                });
-        }
+		public override void PropertyToTable(Property property) {
+												Value = (int)property["value"];
+							
 
-        public override void PropertyToTable(Property property)
-        {
-            Value = (int)property["value"];
-        }
+		}
 
-        public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate)
-        {
-            var currentValue = recordUpdate.CurrentRecordValue as Property;
-            var previousValue = recordUpdate.PreviousRecordValue as Property;
-            int? currentValueTyped = null;
-            int? previousValueTyped = null;
+		public override RecordUpdate RecordUpdateToTyped(RecordUpdate recordUpdate) {
 
-            if (currentValue != null && currentValue.ContainsKey("value"))
-            {
-                currentValueTyped = (int)currentValue["value"];
-            }
+			var currentValue = recordUpdate.CurrentRecordValue as Property;
+			var previousValue = recordUpdate.PreviousRecordValue as Property;
+			 				  int? currentValueTyped = null;
+				  int? previousValueTyped = null;
+				
+				  if (currentValue != null && currentValue.ContainsKey("value")) {
+				    				      currentValueTyped = (int)currentValue["value"];
+				    				  }
+				
+				  if (previousValue != null && previousValue.ContainsKey("value")) {
+				    				      previousValueTyped = (int)previousValue["value"];
+				    	
+				 }
+					
 
-            if (previousValue != null && previousValue.ContainsKey("value"))
-            {
-                previousValueTyped = (int)previousValue["value"];
-            }
+			
+			return new DamageTableUpdate
+			{
+				Table = recordUpdate.Table,
+				CurrentRecordValue = recordUpdate.CurrentRecordValue,
+				PreviousRecordValue = recordUpdate.PreviousRecordValue,				
+				CurrentRecordKey = recordUpdate.CurrentRecordKey,
+				PreviousRecordKey = recordUpdate.PreviousRecordKey,
+				Type = recordUpdate.Type,
+				
+									Value = currentValueTyped,
+					PreviousValue = previousValueTyped,	
+							};
+		}
 
-            return new DamageTableUpdate
-            {
-                Table = recordUpdate.Table,
-                CurrentRecordValue = recordUpdate.CurrentRecordValue,
-                PreviousRecordValue = recordUpdate.PreviousRecordValue,
-                CurrentRecordKey = recordUpdate.CurrentRecordKey,
-                PreviousRecordKey = recordUpdate.PreviousRecordKey,
-                Type = recordUpdate.Type,
-                Value = currentValueTyped,
-                PreviousValue = previousValueTyped,
-            };
-        }
-    }
+
+	}
 }
